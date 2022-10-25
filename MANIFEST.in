@@ -1,8 +1,6 @@
 include LICENSE
 include MANIFEST.in
 include *.md
-graft {{project-name}}
-graft docs
-graft tests
+graft playground_unimport
 global-exclude __pycache__
 global-exclude *.py[co]

@@ -5,6 +5,9 @@ from unimport.analyzers import MainAnalyzer
 from unimport.refactor import refactor_string
 from unimport.statement import Import
 
+# Editor stilleri – tutarlı yükseklik
+EDITOR_HEIGHT = 420
+
 
 def refactor(source: str) -> str:
     with MainAnalyzer(source=source, include_star_import=True):
@@ -13,7 +16,7 @@ def refactor(source: str) -> str:
     return refactor_string(source=source, unused_imports=unused_imports)
 
 
-def run_refactor(source: str) -> pn.widgets.Ace:
+def run_refactor(source: str) -> pn.widgets.CodeEditor:
     try:
         refactored_source = refactor(source)
         language = "python"
@@ -21,35 +24,134 @@ def run_refactor(source: str) -> pn.widgets.Ace:
         refactored_source = traceback.format_exc()
         language = "text"
 
-    return pn.widgets.Ace(
+    return pn.widgets.CodeEditor(
         value=refactored_source,
         language=language,
         readonly=True,
+        height=EDITOR_HEIGHT,
+        theme="monokai",
     )
 
 
 pn.config.sizing_mode = "stretch_both"
-pn.extension()
+pn.extension("codeeditor", design="material")
 
 
 example_source_code = """\
-import x
+import os
+import sys
+from pathlib import Path
 
-
+x = 1
+print(x)
 """
 
-source_editor = pn.widgets.Ace(value=example_source_code, language="python")
+source_editor = pn.widgets.CodeEditor(
+    value=example_source_code,
+    language="python",
+    height=EDITOR_HEIGHT,
+    theme="chrome",
+)
 result_editor = pn.bind(run_refactor, source_editor)
 
 
-docs_button = pn.widgets.Button(name="Go to docs", button_type="primary", width=100)
-docs_button.js_on_click(code="window.open('https://unimport.hakancelik.dev')")
-github_button = pn.widgets.Button(name="GitHub", button_type="primary", width=100)
-github_button.js_on_click(code="window.open('https://github.com/hakancelikdev/unimport')")
+def clear_source(event):
+    source_editor.value = ""
 
-app_row = pn.Row(source_editor, result_editor)
 
-bootstrap = pn.template.MaterialTemplate(title="Try Unimport")
-bootstrap.header.append(pn.Row(docs_button, github_button))
-bootstrap.main.append(app_row)
-bootstrap.servable()
+# Etiketler
+source_label = pn.pane.Markdown(
+    "**Kaynak kod**",
+    margin=(0, 0, 4, 0),
+    styles={"font-size": "13px", "color": "var(--design-secondary-color, #666)"},
+)
+result_label = pn.pane.Markdown(
+    "**Sonuç** (kullanılmayan import'lar kaldırıldı)",
+    margin=(0, 0, 4, 0),
+    styles={"font-size": "13px", "color": "var(--design-secondary-color, #666)"},
+)
+
+# Araç butonları
+clear_btn = pn.widgets.Button(
+    name="Temizle",
+    button_type="default",
+    width=90,
+)
+clear_btn.on_click(clear_source)
+
+docs_btn = pn.widgets.Button(
+    name="Dokümantasyon",
+    button_type="primary",
+    width=130,
+)
+docs_btn.js_on_click(code="window.open('https://unimport.hakancelik.dev')")
+
+github_btn = pn.widgets.Button(
+    name="GitHub",
+    button_type="primary",
+    width=100,
+)
+github_btn.js_on_click(code="window.open('https://github.com/hakancelikdev/unimport')")
+
+toolbar = pn.Row(
+    clear_btn,
+    margin=(0, 0, 12, 0),
+    styles={"align-items": "center"},
+)
+
+# Ana içerik: iki sütun
+source_column = pn.Column(
+    source_label,
+    source_editor,
+    margin=(0, 8, 0, 0),
+    styles={"flex": "1", "min-width": "280px"},
+)
+result_column = pn.Column(
+    result_label,
+    result_editor,
+    margin=(0, 0, 0, 8),
+    styles={"flex": "1", "min-width": "280px"},
+)
+
+editors_row = pn.Row(
+    source_column,
+    result_column,
+    margin=(0, 0, 16, 0),
+    styles={"flex-wrap": "wrap"},
+)
+
+# Açıklama
+intro = pn.pane.Markdown(
+    "Kutuya Python kodu yazın veya yapıştırın. Sağdaki panelde kullanılmayan "
+    "import'lar otomatik kaldırılmış hali görünür.",
+    margin=(0, 0, 16, 0),
+    styles={"font-size": "14px", "opacity": "0.9"},
+)
+
+main_content = pn.Column(
+    intro,
+    toolbar,
+    editors_row,
+    margin=(24, 24, 24, 24),
+    max_width=1200,
+    styles={"margin-left": "auto", "margin-right": "auto"},
+)
+
+template = pn.template.MaterialTemplate(
+    title="Unimport Playground",
+    main=[main_content],
+    header_background="#1a1a2e",
+    header_color="#eee",
+)
+
+# Header'a link butonları
+template.header.append(
+    pn.Row(
+        docs_btn,
+        github_btn,
+        margin=(0, 12, 0, 0),
+        styles={"align-items": "center", "gap": "8px"},
+    )
+)
+
+template.servable()

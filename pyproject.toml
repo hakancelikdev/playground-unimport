@@ -14,11 +14,11 @@ skip_gitignore = true
 
 [tool.black]
 line-length = 120
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py310', 'py311', 'py312', 'py313']
 
 [tool.unimport]
 remove = true
-include_start_import = true
+include_star_import = true
 ignore_init = true
 
 [tool.docformatter]
